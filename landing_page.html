@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeFiX - Tu app de finanzas descentralizadas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0a23;
+      color: #ffffff;
+    }
+    header {
+      background-color: #111133;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .connect-btn {
+      background: #00ffae;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      color: #000;
+      cursor: pointer;
+    }
+    .hero {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+    .hero h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .hero p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+    .cta {
+      background: #00ffae;
+      color: #000;
+      padding: 1rem 2rem;
+      font-weight: bold;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      padding: 3rem 2rem;
+      background-color: #111133;
+    }
+    .feature {
+      background-color: #1a1a40;
+      padding: 1.5rem;
+      border-radius: 10px;
+      text-align: center;
+    }
+    footer {
+      padding: 1rem 2rem;
+      text-align: center;
+      background-color: #0d0d2d;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DeFiX</h1>
+  <button class="connect-btn" onclick="connectWallet()">Conectar Wallet</button>
+</header>
+
+<section class="hero">
+  <h2>El futuro de tus finanzas es descentralizado</h2>
+  <p>DeFiX te permite invertir, ahorrar y prestar criptomonedas sin intermediarios. Seguro, rápido y sin fronteras.</p>
+  <button class="cta">Comienza ahora</button>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <h3>✅ Rendimiento alto</h3>
+    <p>Gana intereses por tus activos digitales con tasas superiores al sistema bancario.</p>
+  </div>
+  <div class="feature">
+    <h3>🔒 Seguridad blockchain</h3>
+    <p>Smart contracts auditados y control total de tus fondos. Sin bancos.</p>
+  </div>
+  <div class="feature">
+    <h3>🌎 Acceso global</h3>
+    <p>Úsalo desde cualquier parte del mundo, solo necesitas una wallet Web3.</p>
+  </div>
+</section>
+
+<footer>
+  © 2025 DeFiX. Todos los derechos reservados.
+</footer>
+
+<script>
+  async function connectWallet() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        alert("Conectado con: " + accounts[0]);
+      } catch (error) {
+        alert("Error al conectar la wallet.");
+        console.error(error);
+      }
+    } else {
+      alert("MetaMask no está instalado. Instálalo para continuar.");
+    }
+  }
+</script>
+
+</body>
+</html>

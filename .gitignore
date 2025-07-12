@@ -1,0 +1,20 @@
+# Archivo para guardar claves privadas y URLs de nodos
+.env
+
+# Dependencias de Node.js (se reinstalan con 'npm install')
+node_modules
+
+# Archivos de caché y compilación de Hardhat
+cache
+artifacts
+
+# Tipos generados automáticamente
+typechain-types
+
+# Reportes de cobertura de tests
+coverage
+coverage.json
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeFiX - Your Decentralized Finance App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --accent-color: #00ffae; --primary-bg: #0a0a23; --secondary-bg: #111133; --card-bg: #1a1a40; }
+    body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--primary-bg); color: #ffffff; }
+    header { background-color: var(--secondary-bg); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-bg); }
+    header h1 { margin: 0; font-size: 1.5rem; }
+    .connect-btn { background: var(--accent-color); border: none; padding: 0.7rem 1.2rem; border-radius: 8px; font-weight: 600; color: #000; cursor: pointer; transition: background-color 0.2s; }
+    .connect-btn:hover { background-color: #00e09a; }
+    .hero { text-align: center; padding: 4rem 2rem; }
+    .hero h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+    .hero p { font-size: 1.2rem; max-width: 600px; margin: 0 auto 2rem; }
+    .cta { background: var(--accent-color); color: #000; padding: 1rem 2rem; font-weight: bold; border-radius: 10px; font-size: 1rem; cursor: pointer; border: none; }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; padding: 3rem 2rem; background-color: var(--secondary-bg); }
+    .feature { background-color: var(--card-bg); padding: 1.5rem; border-radius: 10px; text-align: center; }
+    footer { padding: 1rem 2rem; text-align: center; background-color: #0d0d2d; font-size: 0.9rem; margin-top: 2rem; }
+    
+    /* APP STYLES */
+    #app { display: none; /* Hidden by default */ padding: 2rem; margin: 2rem auto; max-width: 600px; background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--accent-color); }
+    #app h3 { text-align: center; margin-top: 0; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; }
+    .form-group input { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid #333; background-color: #2a2a50; color: white; font-size: 1rem; box-sizing: border-box; }
+    .balance-display { margin-top: 1.5rem; text-align: center; font-size: 1.1rem; }
+    .balance-display span { font-weight: 700; color: var(--accent-color); }
+    #status { text-align: center; margin-top: 1rem; min-height: 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DeFiX</h1>
+  <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+</header>
+
+<section class="hero">
+  <h2>The future of your finances is decentralized</h2>
+  <p>DeFiX allows you to invest, save, and lend cryptocurrencies without intermediaries. Secure, fast, and borderless.</p>
+  <button id="ctaBtn" class="cta">Get Started</button>
+</section>
+
+<section id="app">
+    <h3>Deposit Collateral & Mint MSC</h3>
+    <div class="form-group">
+        <label for="amount">Collateral Amount (Test WETH):</label>
+        <input type="number" id="amount" placeholder="Ex: 1.5" />
+    </div>
+    <button id="depositBtn" class="cta" style="width: 100%;">Deposit & Mint</button>
+    <div id="status"></div>
+    <div class="balance-display">
+        Your balance: <span id="mscBalance">0.00</span> MSC
+    </div>
+</section>
+
+<section class="features">
+  <div class="feature"><h3>✅ High Yield</h3><p>Earn interest on your digital assets with rates above the banking system.</p></div>
+  <div class="feature"><h3>🔒 Blockchain Security</h3><p>Audited smart contracts and full control of your funds. No banks.</p></div>
+  <div class="feature"><h3>🌎 Global Access</h3><p>Use it from anywhere in the world, you only need a Web3 wallet.</p></div>
+</section>
+
+<footer>© 2025 DeFiX. All rights reserved.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+
+<script>
+  // 1. CONSTANTES Y CONFIGURACIÓN
+  // ⚠️ ¡IMPORTANTE! Reemplaza esto con tus datos reales
+  const coreContractAddress = "0x800418621cA659139744C4c14B013CC739d5DD28";
+  const collateralTokenAddress = "0x48823acbFF4D3C87f8846C38f4C2CCF695Ba9c89"; // El TestERC20 que desplegaste
+  const stablecoinAddress = "0xA2fcfae51e3E4fb4f1220a684CF9f81709C03209";
+
+  // Copia y pega los ABIs de tus archivos en la carpeta 'artifacts'
+  const coreABI =  [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_stablecoinAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_collateralTokenAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_oracleAddress",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "collateralAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "stablecoinMinted",
+          "type": "uint256"
+        }
+      ],
+      "name": "Deposited",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "stablecoinBurned",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "collateralReturned",
+          "type": "uint256"
+        }
+      ],
+      "name": "Withdrawn",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "COLLATERALIZATION_RATIO",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "MINTING_FEE",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "collateralBalances",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "collateralToken",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_collateralAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositAndMint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "priceOracle",
+      "outputs": [
+        {
+          "internalType": "contract IPriceOracle",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "stablecoin",
+      "outputs": [
+        {
+          "internalType": "contract Stablecoin",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalFeesCollected",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ];
+  const collateralTokenABI = [
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "allowance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "needed",
+          "type": "uint256"
+        }
+      ],
+      "name": "ERC20InsufficientAllowance",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "needed",
+          "type": "uint256"
+        }
+      ],
+      "name": "ERC20InsufficientBalance",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "approver",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidApprover",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidReceiver",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidSender",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidSpender",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Approval",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
+  const stablecoinABI = [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "allowance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "needed",
+          "type": "uint256"
+        }
+      ],
+      "name": "ERC20InsufficientAllowance",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "needed",
+          "type": "uint256"
+        }
+      ],
+      "name": "ERC20InsufficientBalance",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "approver",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidApprover",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidReceiver",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidSender",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "ERC20InvalidSpender",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableInvalidOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "OwnableUnauthorizedAccount",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Approval",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "previousOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "burnFrom",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "mint",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
+
+  // 2. APP STATE VARIABLES
+  let provider, signer, coreContract, collateralTokenContract, stablecoinContract;
+  
+  // 3. DOM ELEMENTS
+  const connectBtn = document.getElementById('connectBtn');
+  const ctaBtn = document.getElementById('ctaBtn');
+  const depositBtn = document.getElementById('depositBtn');
+  const appSection = document.getElementById('app');
+  const amountInput = document.getElementById('amount');
+  const statusEl = document.getElementById('status');
+  const mscBalanceEl = document.getElementById('mscBalance');
+
+  // 4. DAPP FUNCTIONS
+  async function connectWallet() {
+    if (typeof window.ethereum === 'undefined') {
+      return alert("MetaMask is not installed. Please install it to continue.");
+    }
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      
+      coreContract = new ethers.Contract(coreContractAddress, coreABI, signer);
+      collateralTokenContract = new ethers.Contract(collateralTokenAddress, collateralTokenABI, signer);
+      stablecoinContract = new ethers.Contract(stablecoinAddress, stablecoinABI, signer);
+      
+      initApp();
+    } catch (error) {
+      console.error("Error connecting:", error);
+      alert("Error connecting wallet.");
+    }
+  }
+
+  async function initApp() {
+    const userAddress = await signer.getAddress();
+    connectBtn.textContent = `${userAddress.substring(0, 6)}...${userAddress.substring(userAddress.length - 4)}`;
+    appSection.style.display = 'block';
+    ctaBtn.style.display = 'none';
+    updateBalance();
+  }
+
+  async function deposit() {
+    const amount = amountInput.value;
+    if (!amount || amount <= 0) return alert("Please enter a valid amount.");
+
+    // Clear previous status
+    statusEl.textContent = "Processing...";
+    console.log("--- STARTING NEW DEPOSIT ---");
+
+    try {
+        console.log("Step 1: Converting amount to the correct unit...");
+        const amountToDeposit = ethers.parseUnits(amount, 18);
+        console.log("Amount to deposit (in wei):", amountToDeposit.toString());
+
+        // Pre-flight checks
+        console.log("Checking if contracts are loaded...");
+        if (!collateralTokenContract) throw new Error("Collateral token contract is not initialized.");
+        if (!coreContract) throw new Error("Core contract is not initialized.");
+        console.log("Contracts loaded successfully.");
+
+        // --- APPROVAL ---
+        statusEl.textContent = "1/2: Requesting user approval...";
+        console.log("Step 2: Sending 'approve' transaction...");
+        const approveTx = await collateralTokenContract.approve(coreContractAddress, amountToDeposit);
+        console.log("'approve' transaction sent. Hash:", approveTx.hash);
+
+        console.log("Step 3: Waiting for 'approve' transaction to confirm...");
+        await approveTx.wait();
+        console.log("Approval confirmed!");
+        statusEl.textContent = "Approval confirmed. Preparing deposit...";
+
+        // --- DEPOSIT & MINT ---
+        console.log("Step 4: Sending 'depositAndMint' transaction...");
+        const depositTx = await coreContract.depositAndMint(amountToDeposit);
+        console.log("'depositAndMint' transaction sent. Hash:", depositTx.hash);
+        statusEl.textContent = "2/2: Deposit sent. Awaiting final confirmation...";
+
+        console.log("Step 5: Waiting for 'depositAndMint' transaction to confirm...");
+        await depositTx.wait();
+        console.log("Deposit confirmed!");
+
+        statusEl.textContent = "Transaction completed successfully!";
+        amountInput.value = "";
+        updateBalance();
+
+    } catch (error) {
+        // This block will give us the exact error
+        console.error("----------- ERROR DETECTED -----------");
+        console.error("Process failed. Error details:", error);
+        console.error("---------------------------------------");
+        statusEl.textContent = `Error: ${error.reason || error.message}. Check the console.`;
+    }
+  }
+  
+  async function updateBalance() {
+    if (!signer) return;
+    const userAddress = await signer.getAddress();
+    const balance = await stablecoinContract.balanceOf(userAddress);
+    mscBalanceEl.textContent = parseFloat(ethers.formatUnits(balance, 18)).toFixed(2);
+  }
+
+  // 5. EVENT LISTENERS
+  connectBtn.addEventListener('click', connectWallet);
+  ctaBtn.addEventListener('click', connectWallet);
+  depositBtn.addEventListener('click', deposit);
+
+</script>
+</body>
+</html>

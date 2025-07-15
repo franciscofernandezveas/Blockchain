@@ -26,20 +26,27 @@ contract Core {
     }
 
     function depositAndMint(uint256 _collateralAmount) external {
-        require(_collateralAmount > 0, "Amount must be > 0");
-        collateralToken.transferFrom(msg.sender, address(this), _collateralAmount);
+    require(_collateralAmount > 0, "Amount must be > 0");
 
-        uint256 collateralValue = (_collateralAmount * priceOracle.getAssetPrice()) / 1e8;
-        uint256 amountToMint = (collateralValue * 1e18 * 100) / COLLATERALIZATION_RATIO / 1e18;
+    // 1. Transfiere el colateral del usuario a este contrato.
+    collateralToken.transferFrom(msg.sender, address(this), _collateralAmount);
 
-        uint256 fee = (amountToMint * MINTING_FEE) / 10000;
-        uint256 finalAmountToMint = amountToMint - fee;
+    // 2. Calcula el valor del colateral en USD (asumiendo 18 decimales).
+    uint256 collateralValue = (_collateralAmount * priceOracle.getAssetPrice()) / 1e8;
 
-        totalFeesCollected += fee;
+    // 3. Calcula la cantidad de stablecoins a acuñar (versión simplificada y corregida).
+    // Si el colateral vale $3 (3e18) y el ratio es 150%, se acuñan $2 (2e18).
+    uint256 amountToMint = (collateralValue * 100) / COLLATERALIZATION_RATIO;
 
-        collateralBalances[msg.sender] += _collateralAmount;
-        stablecoin.mint(msg.sender, finalAmountToMint);
+    // 4. Calcula y resta la comisión de acuñación.
+    uint256 fee = (amountToMint * MINTING_FEE) / 10000;
+    uint256 finalAmountToMint = amountToMint - fee;
+    require(finalAmountToMint > 0, "Amount to mint is zero after fee");
 
-        emit Deposited(msg.sender, _collateralAmount, finalAmountToMint);
+    // 5. Actualiza el balance del usuario y acuña los nuevos tokens.
+    collateralBalances[msg.sender] += _collateralAmount;
+    stablecoin.mint(msg.sender, finalAmountToMint);
+
+    emit Deposited(msg.sender, _collateralAmount, finalAmountToMint);
     }
 }
